@@ -1,0 +1,336 @@
+Good. Now we move from **idea founder** → **system architect**.
+
+I’m going to design this properly like a real production Django system.
+
+We’ll cover:
+
+1. System Architecture (Apps structure)
+2. Database Models (clean & scalable)
+3. Request → Response → Chat flow logic
+4. Status logic
+5. Moderation logic
+6. Step-by-step build order
+
+Everything in context.
+
+---
+
+# 🧠 1️⃣ Project Architecture (Django Apps Structure)
+
+Do NOT put everything in one app.
+
+Structure it like this:
+
+```
+core/              → shared utilities
+accounts/          → users & shop profiles
+requests_app/      → item requests
+responses/         → “I Have It” responses
+chat/              → private messaging
+moderation/        → reports & flags
+notifications/     → in-app notifications
+```
+
+This keeps your project clean and scalable.
+
+---
+
+# 🗄 2️⃣ Database Models (Clean & Practical)
+
+## 🔹 accounts app
+
+### User (extend AbstractUser)
+
+* id
+* phone_number
+* is_approved (Boolean)
+* is_suspended (Boolean)
+* report_count (Integer)
+* date_joined
+
+### ShopProfile
+
+* user (OneToOne → User)
+* shop_name
+* location_description
+* created_at
+
+---
+
+## 🔹 requests_app
+
+### ItemRequest
+
+* id
+* owner (FK → User)
+* category (choices)
+* brand
+* model
+* description
+* image
+* status (Active / Negotiating / Bought / Cancelled)
+* created_at
+* updated_at
+
+Important:
+Default status = Active
+
+---
+
+## 🔹 responses
+
+### ItemResponse
+
+This represents someone clicking "I Have It".
+
+* id
+* request (FK → ItemRequest)
+* responder (FK → User)
+* created_at
+
+Constraints:
+
+* Unique together: (request, responder)
+  → So one user cannot click “I Have It” twice.
+
+---
+
+## 🔹 chat app
+
+We do conversation-based messaging.
+
+### Conversation
+
+* id
+* request (FK → ItemRequest)
+* buyer (FK → User)  → request owner
+* seller (FK → User) → responder
+* is_active (Boolean)
+* created_at
+
+Important:
+Only created when owner chooses a responder.
+
+---
+
+### Message
+
+* id
+* conversation (FK → Conversation)
+* sender (FK → User)
+* content
+* created_at
+* is_read (Boolean)
+
+---
+
+## 🔹 moderation app
+
+### UserReport
+
+* id
+* reported_user (FK → User)
+* reported_by (FK → User)
+* reason
+* created_at
+
+Logic:
+Every time report created:
+→ Increase reported_user.report_count
+
+---
+
+# 🔄 3️⃣ Request Flow Logic (Very Important)
+
+Here’s how the system behaves:
+
+---
+
+### Step 1: User posts request
+
+Creates:
+ItemRequest (status = Active)
+
+---
+
+### Step 2: Other users click “I Have It”
+
+Creates:
+ItemResponse
+
+Publicly visible list:
+
+* Shop A
+* Shop B
+* Shop C
+
+---
+
+### Step 3: Owner selects one responder
+
+When owner clicks “Start Chat”:
+
+Check:
+Does Conversation already exist for (request + seller)?
+
+If NO → create Conversation
+If YES → redirect to existing chat
+
+---
+
+### Step 4: Negotiation
+
+Messages created inside Conversation.
+
+Other responders remain visible but no private access.
+
+---
+
+### Step 5: Owner marks status
+
+If Bought:
+
+* request.status = Bought
+* request removed from active timeline
+
+If Negotiating:
+
+* status = Negotiating
+
+---
+
+# 🚦 4️⃣ Timeline Logic
+
+When showing homepage:
+
+Only show:
+
+```
+ItemRequest.objects.filter(status="Active")
+```
+
+Optionally show Negotiating separately.
+
+Never show Bought in main feed.
+
+---
+
+# ⚖️ 5️⃣ Moderation Logic
+
+When report created:
+
+```
+if user.report_count >= 5:
+    send_warning_notification()
+
+if user.report_count >= 10:
+    user.is_suspended = True
+```
+
+Later:
+Celery Beat can run daily to:
+
+* Auto suspend flagged users
+* Auto delete old requests (30 days)
+
+---
+
+# 🛠 6️⃣ Build Order (VERY IMPORTANT)
+
+Do NOT jump randomly.
+
+Follow this exact order:
+
+---
+
+### WEEK 1
+
+* Setup project
+* Custom User model
+* Admin approval system
+* Basic authentication
+
+---
+
+### WEEK 2
+
+* ItemRequest model
+* Create / List / Detail views
+* Request status system
+
+---
+
+### WEEK 3
+
+* ItemResponse model
+* “I Have It” logic
+* Public responders list
+
+---
+
+### WEEK 4
+
+* Conversation model
+* Message model
+* Private messaging UI
+* Basic notifications
+
+---
+
+### WEEK 5
+
+* Report system
+* Suspension logic
+* Clean UI & testing
+
+---
+
+# 💡 Important Product Decision
+
+Let owner chat multiple responders at once.
+
+Why?
+
+Because in real trading:
+They compare price.
+
+Later you can add:
+“Mark as Chosen Seller” if needed.
+
+---
+
+# 🧱 Tech Stack Decision
+
+Backend: Django
+DB: PostgreSQL
+Real-time chat: Start simple (AJAX polling)
+Later: Django Channels
+
+Do NOT start with Channels.
+Ship MVP first.
+
+---
+
+# 🚨 Biggest Risk to This Product
+
+Not tech.
+
+Adoption.
+
+You must manually onboard first 20 shops.
+
+Without that:
+App = empty.
+
+---
+
+Now serious question:
+
+Do you want me to next:
+
+1️⃣ Write the actual Django models.py code
+2️⃣ Design the API endpoints
+3️⃣ Design the database ER diagram logic
+4️⃣ Design the UI page structure
+
+Pick one.
