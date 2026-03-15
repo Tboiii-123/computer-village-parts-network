@@ -196,3 +196,171 @@ The biggest challenge for this platform is **adoption**, not technology.
 The platform must onboard an initial group of Computer Village dealers so requests and responses happen consistently.
 
 Without active dealers, the network will not function.
+
+---
+
+# API Structure
+
+The platform exposes RESTful API endpoints for managing users, requests, responses, and messaging.
+
+## Authentication
+
+```
+POST   /api/auth/register/
+POST   /api/auth/login/
+POST   /api/auth/logout/
+GET    /api/auth/me/
+```
+
+---
+
+## Accounts
+
+```
+GET    /api/accounts/profile/
+PUT    /api/accounts/profile/update/
+```
+
+---
+
+## Item Requests
+
+```
+GET    /api/requests/                # list active requests
+POST   /api/requests/create/        # create new request
+GET    /api/requests/<id>/          # request details
+PATCH  /api/requests/<id>/status/   # update request status
+DELETE /api/requests/<id>/delete/
+```
+
+---
+
+## Responses ("I Have It")
+
+```
+POST   /api/responses/<request_id>/respond/
+GET    /api/responses/<request_id>/list/
+```
+
+---
+
+## Conversations
+
+```
+POST   /api/chat/start/<request_id>/<seller_id>/
+GET    /api/chat/conversations/
+GET    /api/chat/<conversation_id>/
+```
+
+---
+
+## Messages
+
+```
+GET    /api/chat/<conversation_id>/messages/
+POST   /api/chat/<conversation_id>/send/
+```
+
+---
+
+## Moderation
+
+```
+POST   /api/reports/report-user/
+GET    /api/reports/my-reports/
+```
+
+---
+
+# Getting Started
+
+Follow the steps below to run the project locally.
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/computer-village-parts-network.git
+cd computer-village-parts-network
+```
+
+---
+
+## 2. Create Virtual Environment
+
+```bash
+python -m venv venv
+```
+
+Activate the virtual environment.
+
+### Windows
+
+```bash
+venv\Scripts\activate
+```
+
+### Mac / Linux
+
+```bash
+source venv/bin/activate
+```
+
+---
+
+## 3. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 4. Apply Database Migrations
+
+```bash
+python manage.py migrate
+```
+
+---
+
+## 5. Create Superuser
+
+```bash
+python manage.py createsuperuser
+```
+
+This account will be used to approve dealer registrations from the admin panel.
+
+---
+
+## 6. Run the Development Server
+
+```bash
+python manage.py runserver
+```
+
+The application will be available at:
+
+```
+http://127.0.0.1:8000/
+```
+
+---
+
+# Admin Panel
+
+Django admin can be accessed at:
+
+```
+http://127.0.0.1:8000/admin
+```
+
+Admin users can:
+
+- approve dealer accounts
+- suspend users
+- monitor reports
+- manage requests
+- moderate conversations
+
+---
