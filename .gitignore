@@ -3,3 +3,5 @@ note.txt
 prd.txt
 system_design.txt
 venv/
+.env
+.gitignore

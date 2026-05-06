@@ -126,6 +126,17 @@ moderation/
 notifications/
 ```
 
+---
+
+# Backend Optimizations
+
+- Implemented Redis caching for frequently accessed GET endpoints to improve performance  
+- Added database indexing and select_related optimizations to reduce query load  
+- Applied pagination for efficient data loading in list views  
+- Implemented rate limiting to prevent API abuse and spam requests  
+
+---
+
 ### accounts
 Handles user accounts and shop profiles.
 

@@ -23,12 +23,12 @@ class ItemRequest(models.Model):
     ]
 
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES,db_index=True)
     brand = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     image = models.ImageField(upload_to="requests/", blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active",   db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
