@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes,throttle_classes
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,8 +16,12 @@ from rest_framework.pagination import PageNumberPagination
 from utils.redis import cache_response
 from django.core.cache import cache
 
+#Throthle Implemnetaion
+from utils.throtles import UserThrottle
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@throttle_classes([UserThrottle])
 def create_item_request(request):
 
     serializer = ItemRequestSerializer(data=request.data)
@@ -28,8 +32,10 @@ def create_item_request(request):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
+@throttle_classes([UserThrottle])
 def update_request_status(request, request_id):
 
     item_request = get_object_or_404(ItemRequest, id=request_id)
@@ -56,9 +62,24 @@ def update_request_status(request, request_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @cache_response(timeout=60, vary_user=False)
+@throttle_classes([UserThrottle])
 def get_all_requests(request):
 
-    item_requests = ItemRequest.objects.filter(status="active").select_related('owner').order_by("-created_at")
+    item_requests = ItemRequest.objects.all().select_related('owner').order_by("-created_at")
+
+     # 🔍 FILTERING LOGIC
+    category = request.query_params.get("category")
+    status_param = request.query_params.get("status")
+
+    if category:
+        item_requests = item_requests.filter(category=category)
+
+    if status_param:
+        item_requests = item_requests.filter(status=status_param)
+
+    # default active filter (optional)
+    if not status_param:
+        item_requests = item_requests.filter(status="active")
 
     #A paginator controller
     paginator = PageNumberPagination()
@@ -79,9 +100,9 @@ def get_all_requests(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-#vary_user =False means public if set to true menas personal cache
-
+@throttle_classes([UserThrottle])
 @cache_response(timeout=60, vary_user=False)
+#vary_user =False means public if set to true menas personal cache
 def request_detail(request, request_id):
 
     item_request = get_object_or_404(ItemRequest, id=request_id)
