@@ -36,7 +36,7 @@ def i_have_it(request, request_id):
 @api_view(["GET"])
 def request_responses(request, request_id):
 
-    responses = ItemResponse.objects.filter(request_id=request_id)
+    responses = ItemResponse.objects.filter(request_id=request_id).select_related("responder").order_by('-created_at')
 
     serializer = ItemResponseSerializer(responses, many=True)
 

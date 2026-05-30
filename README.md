@@ -238,6 +238,8 @@ PUT    /api/accounts/profile/update/
 
 ```
 GET    /api/requests/                # list active requests
+GET   /api/requests?category=charger     # list active requests filterd by category
+
 POST   /api/requests/create/        # create new request
 GET    /api/requests/<id>/          # request details
 PATCH  /api/requests/<id>/status/   # update request status

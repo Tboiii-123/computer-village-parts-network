@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  web:
+  #Build Docker image using Dockerfile in this folder
+    build: .
+    container_name: django_app
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    #loading .env file
+    env_file:
+      - .env
+    #Start database container BEFORE Django starts”
+    depends_on:
+      - db
+
+  db:
+  #Uses official PostgreSQL image from Docker Hub.
+    image: postgres:16
+    container_name: postgres_db
+    #If container crashes → Docker restarts it automatically.
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

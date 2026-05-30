@@ -1,17 +1,23 @@
 from django.shortcuts import render
 
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes,throttle_classes
 # Create your views here.
 from .serializers import RegisterSerializer, UserSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
+from utils.throtles import RegisterThrottle,UserThrottle,LoginThrottle
+from .serializers import GoogleAuthSerializer
+from .services import GoogleAuthService
+
+
 
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([RegisterThrottle])
 def register_view(request):
    
 
@@ -37,6 +43,8 @@ def register_view(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@throttle_classes([UserThrottle])
 def get_users(request):
     users = User.objects.select_related("profile").all()
     serializer = UserSerializer(users, many=True)
@@ -46,6 +54,7 @@ def get_users(request):
 
 @api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
+@throttle_classes([UserThrottle])
 def my_profile(request):
 
     if request.method == "GET":
@@ -80,3 +89,57 @@ def logout_view(request):
         print(str(e))
         return Response({"error": str(e)}, status=400)
        
+
+
+#Google Auth Login
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@throttle_classes([LoginThrottle])
+def google_login(request):
+
+    serializer = GoogleAuthSerializer(data=request.data)
+
+    serializer.is_valid(raise_exception=True)
+
+    try:
+        token = serializer.validated_data["id_token"]
+
+        payload = GoogleAuthService.verify_google_token(token)
+
+        user = GoogleAuthService.create_or_update_user(payload)
+
+        refresh = (
+            RefreshToken.for_user(user)
+        )
+
+        return Response(
+            {
+                "status": True,
+                "message":
+                "Google login successful",
+
+                "user": {
+                    "email": user.email,
+                    "user_name": user.user_name,
+                    "first_name": user.first_name,
+                    "last_name":user.last_name,
+                },
+
+                "tokens": {
+                "access": str(refresh.access_token),
+                "refresh":str(refresh),
+                }
+            },
+            status=status.HTTP_200_OK
+        )
+
+    except ValueError as e:
+        return Response(
+            {
+                "status": False,
+                "message": str(e)
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
