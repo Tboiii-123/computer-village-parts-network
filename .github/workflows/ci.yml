@@ -55,4 +55,5 @@ jobs:
           POSTGRES_HOST: 127.0.0.1
           POSTGRES_PORT: 5432
           REDIS_URL: ${{ secrets.REDIS_URL }}
+        run: pytest -v
         
